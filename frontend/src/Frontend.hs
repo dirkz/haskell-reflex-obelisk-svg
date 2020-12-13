@@ -50,7 +50,7 @@ frontend = Frontend
                        -- then disappears when the client has rendered.
                        prerender_ simpleSvgWithNamespace simpleSvgWithNamespace
 
-                       -- This works
+                       -- This works:
                        --simpleSvgWithNamespace
 
                        return ()
