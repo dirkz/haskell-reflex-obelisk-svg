@@ -4,20 +4,22 @@
 
 module Frontend where
 
-import Control.Monad
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
-import Language.Javascript.JSaddle (eval, liftJSM)
+import           Control.Monad
+import qualified Data.Text                     as T
+import qualified Data.Text.Encoding            as T
+import           Language.Javascript.JSaddle    ( eval
+                                                , liftJSM
+                                                )
 
-import Obelisk.Frontend
-import Obelisk.Configs
-import Obelisk.Route
-import Obelisk.Generated.Static
+import           Obelisk.Frontend
+import           Obelisk.Configs
+import           Obelisk.Route
+import           Obelisk.Generated.Static
 
-import Reflex.Dom.Core
+import           Reflex.Dom.Core
 
-import Common.Api
-import Common.Route
+import           Common.Api
+import           Common.Route
 
 
 -- This runs in a monad that can be run on the client or the server.
@@ -26,23 +28,53 @@ import Common.Route
 frontend :: Frontend (R FrontendRoute)
 frontend = Frontend
   { _frontend_head = do
-      el "title" $ text "Obelisk Minimal Example"
-      elAttr "link" ("href" =: static @"main.css" <> "type" =: "text/css" <> "rel" =: "stylesheet") blank
+                       el "title" $ text "Obelisk Minimal Example"
+                       elAttr
+                         "link"
+                         (  "href"
+                         =: static @"main.css"
+                         <> "type"
+                         =: "text/css"
+                         <> "rel"
+                         =: "stylesheet"
+                         )
+                         blank
   , _frontend_body = do
-      el "h1" $ text "Welcome to Obelisk!"
-      el "p" $ text $ T.pack commonStuff
-      
-      -- `prerender` and `prerender_` let you choose a widget to run on the server
-      -- during prerendering and a different widget to run on the client with
-      -- JavaScript. The following will generate a `blank` widget on the server and
-      -- print "Hello, World!" on the client.
-      prerender_ blank $ liftJSM $ void $ eval ("console.log('Hello, World!')" :: T.Text)
+                       el "h1" $ text "Welcome to Obelisk!"
+                       el "p" $ text $ T.pack commonStuff
 
-      elAttr "img" ("src" =: static @"obelisk.jpg") blank
-      el "div" $ do
-        exampleConfig <- getConfig "common/example"
-        case exampleConfig of
-          Nothing -> text "No config file found in config/common/example"
-          Just s -> text $ T.decodeUtf8 s
-      return ()
+                       -- `prerender` and `prerender_` let you choose a widget to run on the server
+                       -- during prerendering and a different widget to run on the client with
+                       -- JavaScript.
+                       -- On reload, the server-generated SVG is visible for a moment,
+                       -- then disappears when the client has rendered.
+                       prerender_ simpleSvgWithNamespace simpleSvgWithNamespace
+
+                       -- This works
+                       --simpleSvgWithNamespace
+
+                       return ()
   }
+
+simpleSvgWithNamespace :: (DomBuilder t m, PostBuild t m) => m ()
+simpleSvgWithNamespace = do
+  elDynAttrNS'
+      (Just "http://www.w3.org/2000/svg")
+      "svg"
+      (constDyn
+        (  "xmlns"
+        =: "http://www.w3.org/2000/svg"
+        <> "width"
+        =: "100%"
+        <> "height"
+        =: "100"
+        )
+      )
+    $ innerPart
+  return ()
+ where
+  innerPart :: DomBuilder t m => m ()
+  innerPart = do
+    elAttr "rect" ("width" =: "100%" <> "height" =: "100%" <> "fill" =: "green")
+      $ blank
+    return ()
