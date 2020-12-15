@@ -4,15 +4,11 @@
 
 module Frontend where
 
-import           Control.Monad
 import qualified Data.Text                     as T
-import qualified Data.Text.Encoding            as T
-import           Language.Javascript.JSaddle    ( eval
-                                                , liftJSM
-                                                )
+import           Data.Text                      ( Text )
+import           Data.Map                       ( Map )
 
 import           Obelisk.Frontend
-import           Obelisk.Configs
 import           Obelisk.Route
 import           Obelisk.Generated.Static
 
@@ -56,25 +52,38 @@ frontend = Frontend
                        return ()
   }
 
+elSvgAttr
+  :: (DomBuilder t m, PostBuild t m)
+  => Text
+  -> Dynamic t (Map Text Text)
+  -> m a
+  -> m (Element EventResult (DomBuilderSpace m) t, a)
+elSvgAttr = elDynAttrNS' $ Just "http://www.w3.org/2000/svg"
+
 simpleSvgWithNamespace :: (DomBuilder t m, PostBuild t m) => m ()
 simpleSvgWithNamespace = do
-  elDynAttrNS'
-      (Just "http://www.w3.org/2000/svg")
-      "svg"
-      (constDyn
-        (  "xmlns"
-        =: "http://www.w3.org/2000/svg"
-        <> "width"
-        =: "100%"
-        <> "height"
-        =: "100"
+  _ <-
+    elSvgAttr
+        "svg"
+        (constDyn
+          (  "xmlns"
+          =: "http://www.w3.org/2000/svg"
+          <> "width"
+          =: "100%"
+          <> "height"
+          =: "100"
+          )
         )
-      )
-    $ innerPart
+      $ innerPart
   return ()
  where
-  innerPart :: DomBuilder t m => m ()
+  innerPart :: (DomBuilder t m, PostBuild t m) => m ()
   innerPart = do
-    elAttr "rect" ("width" =: "100%" <> "height" =: "100%" <> "fill" =: "green")
-      $ blank
+    _ <-
+      elSvgAttr
+          "rect"
+          (constDyn
+            ("width" =: "100%" <> "height" =: "100%" <> "fill" =: "green")
+          )
+        $ blank
     return ()
